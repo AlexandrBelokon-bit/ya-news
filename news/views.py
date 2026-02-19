@@ -12,6 +12,7 @@ class NewsList(generic.ListView):
     """Список новостей."""
     model = News
     template_name = 'news/home.html'
+    context_object_name = 'news_feed'
 
     def get_queryset(self):
         """
@@ -29,11 +30,10 @@ class NewsDetail(generic.DetailView):
     template_name = 'news/detail.html'
 
     def get_object(self, queryset=None):
-        obj = get_object_or_404(
+        return get_object_or_404(
             self.model.objects.prefetch_related('comment_set__author'),
-            pk=self.kwargs['pk']
+            pk=self.kwargs['pk'],
         )
-        return obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -43,9 +43,9 @@ class NewsDetail(generic.DetailView):
 
 
 class NewsComment(
-        LoginRequiredMixin,
-        generic.detail.SingleObjectMixin,
-        generic.FormView
+    LoginRequiredMixin,
+    generic.detail.SingleObjectMixin,
+    generic.FormView,
 ):
     model = News
     form_class = CommentForm
@@ -68,7 +68,6 @@ class NewsComment(
 
 
 class NewsDetailView(generic.View):
-
     def get(self, request, *args, **kwargs):
         view = NewsDetail.as_view()
         return view(request, *args, **kwargs)
@@ -85,7 +84,8 @@ class CommentBase(LoginRequiredMixin):
     def get_success_url(self):
         comment = self.get_object()
         return reverse(
-            'news:detail', kwargs={'pk': comment.news.pk}
+            'news:detail',
+            kwargs={'pk': comment.news.pk},
         ) + '#comments'
 
     def get_queryset(self):
